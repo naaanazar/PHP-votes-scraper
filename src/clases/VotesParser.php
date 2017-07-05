@@ -2,8 +2,6 @@
 
 namespace App\clases;
 
-
-
 use App\library\QueryToDB;
 use App\library\Validate;
 
@@ -29,17 +27,32 @@ class VotesParser
     public function ParseVotes()
     {
 
-        $query =  $this->query;
-        $validation = $this->validation;
-
         $dom = HtmlDomParser::file_get_html('http://rada.gov.ua/news/hpz8');
 
         foreach($dom->find('div#list_archive div.news_item span.details a') as $element) {
 
-
             $votes = HtmlDomParser::file_get_html($element->href);
 
-            echo $votes->find('.head_gol', 0)->innertext .  "<br>";
+            $nameBill = $this->getEncodData($votes->find('div.head_gol', 0)->children(0)->innertext());
+
+            $billStatus = ($this->getEncodData($votes->find('div.head_gol', 0)->childNodes(4)->innertext));
+
+            var_dump($this->getEncodData($votes->find('div.head_gol', 0)->innertext));
+            $blockContent = $this->getEncodData($votes->find('div.head_gol', 0)->innertext);
+
+            preg_match("/\d{2}.\d{2}.\d{4} \d{2}:\d{2}/", $blockContent, $date);
+
+            var_dump($date);
+
+            preg_match("/За:(\d+)/", $blockContent, $match);
+            var_dump($match[1]);
+
+           // preg_match_all("/(За:(\d+))|(Проти:(\d+))|(Утрималися:(\d+))|(голосували:(\d+))|(Всього:(\d+))/", $blockContent, $match);
+          //  preg_match_all("/(За:\d+)|(Проти:\d+)|(Утрималися:\d*)|(голосували:\d+)|(Всього:\d+)/", $blockContent, $match);
+            preg_match_all("/(За:\d+)|(Проти:\d+)|(Утрималися:\d*)|(голосували:\d+)|(Всього:\d+)/", $blockContent, $match);
+
+           var_dump($match);
+
 
             foreach($votes->find('li[id="00"] ul.fr li ul.frd li') as $element) {
 
@@ -47,38 +60,47 @@ class VotesParser
                 $vote = $this->getEncodData($element->find('.golos', 0)->plaintext);
                 $vote =  $this->getValidData(str_replace('</font>', '', $vote));
 
-                var_dump($vote);
+                $deputatId = $this->getDeputatId($name);
 
-                $deputatId = getDeputatId($name);
+              //  $this->insertBillToDb();
 
-                $sql = "INSERT  INTO votes (deputat_id, bill_id, votes) VALUES ('" . $deputatId . "', '" .'12' . "', '" . $vote . "')";
+                $bill = '12';
 
-                $result = $query->queryToDB($sql);
+                $this->insertVotesToDB($deputatId, $vote, $bill);
 
-                // var_dump( $element->find('.dep'));
+                echo($vote . '  ' . $deputatId . '   ' . $bill . '<br>');
 
             }
 
             sleep(30);
-//  $votes = HtmlDomParser::file_get_html('http://w1.c1.rada.gov.ua/pls/radan_gs09/ns_golos?g_id=13159');
-
 
         }
     }
 
 
-
+    /**
+     * @param $data
+     * @return string
+     */
     protected function getValidData($data)
     {
         $validation = new Validate;
         return $validation->validation('text', $data, null, null);
     }
 
+    /**
+     * @param $data
+     * @return string
+     */
     protected function getEncodData($data)
     {
         return iconv(mb_detect_encoding($data, mb_detect_order(), true), "UTF-8", $data);
     }
 
+    /**
+     * @param $name
+     * @return mixed
+     */
     protected function getDeputatId($name)
     {
         $sql = 'SELECT id FROM deputat WHERE name = \''. $name .'\'';
@@ -95,10 +117,27 @@ class VotesParser
             $deputatId = $row['id'];
         }
 
-        echo 'SELECT * FROM deputat WHERE name = \'' . $name . '\'';
-        var_dump($result);
+     /*   echo 'SELECT * FROM deputat WHERE name = \'' . $name . '\'';
         var_dump($row['id']);
+        var_dump($result);*/
 
         return $deputatId;
+    }
+
+    /**
+     * @param $deputatId
+     * @param $vote
+     * @param $bill
+     * @return bool|\mysqli_result
+     */
+    protected function insertVotesToDB($deputatId, $vote, $bill)
+    {
+
+        $sql = "INSERT  INTO votes (deputat_id, bill_id, votes) VALUES ('" . $deputatId . "', '" . $bill . "', '" . $vote . "')";
+        return $this->query->queryToDB($sql);
+    }
+
+    protected function insertBillToDb(){
+
     }
 }
