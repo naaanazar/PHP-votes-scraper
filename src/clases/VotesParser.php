@@ -21,20 +21,11 @@ class VotesParser
 
 
     /**
-     * VotesParser constructor.
-     */
-    public function __construct()
-    {
-        $this->query = new QueryToDB();
-    }
-
-
-    /**
      * Init parser
      */
     public function ParseVotes()
     {
-        $page = 4;
+        $page = 1;
         while (true) {
 
             echo 'PAGE #' . $page;
@@ -54,7 +45,7 @@ class VotesParser
 
                         $name = $this->getValidData($this->getEncodData($element->find('.dep', 0)->innertext));
                         $vote = $this->getEncodData($element->find('.golos', 0)->plaintext);
-                        $vote = $this->getValidData(str_replace('</font>', '', $vote));
+                        $vote = mb_strtolower($this->getValidData(str_replace('</font>', '', $vote)));
 
                         /**
                         const voteMap = {
@@ -82,7 +73,7 @@ class VotesParser
             }
 
             $page++;
-            sleep(55);
+            sleep(30);
         }
     }
 
@@ -117,15 +108,17 @@ class VotesParser
      */
     protected function getDeputatId($name)
     {
+
+        $query = new QueryToDB();
         $sql = 'SELECT id FROM deputat WHERE name = \''. $name .'\'';
-        $result = $this->query->queryToDB($sql);
+        $result = $query->queryToDB($sql);
         $row = mysqli_fetch_assoc($result);
 
         if($row == null ){
             $sql = "INSERT  INTO deputat (name) VALUES ('" . $name . "')";
 
-            $result = $this->query->queryToDB($sql);
-            $deputatId = $this->query->getConnection()->insert_id;
+            $result = $query->queryToDB($sql);
+            $deputatId = $query->getConnection()->insert_id;
 
         } else {
             $deputatId = $row['id'];
@@ -144,10 +137,11 @@ class VotesParser
      */
     protected function insertVotesToDB($deputatId, $vote, $bill)
     {
+        $query = new QueryToDB();
 
         $sql = "INSERT  INTO votes (deputat_id, bill_id, votes) VALUES ('" . $deputatId . "', '" . $bill . "', '" . $vote . "')";
 
-        return $this->query->queryToDB($sql);
+        return $query->queryToDB($sql);
     }
 
 
@@ -158,14 +152,14 @@ class VotesParser
      */
     protected function insertBillToDb($data)
     {
+        $query = new QueryToDB();
         $sql = "INSERT  INTO bill (
-            billName, billStatus, date, za, opposite, refrained, notVote, billIdRada) 
-            VALUES ('" . $this->getValidData($data['billName']) . "', '" . $data['billStatus'] . "', '" . $data['date'] . "', '" . $data['za'] . "', '" . $data['opposite'] . "', '" . $data['refrained'] . "', '" . $data['notVote'] . "', '" . $data['billIdRada'] . "')";
-        $result = $this->query->queryToDB($sql);
+            bill_name, bill_status, date, yes, no, abstained, not_vote, all_deputats, bill_id_rada) 
+            VALUES ('" . $this->getValidData($data['billName']) . "', '" . $data['billStatus'] . "', '" . $data['date'] . "', '" . $data['za'] . "', '" . $data['opposite'] . "', '" . $data['refrained'] . "', '" . $data['notVote'] . "', '" . $data['all'] . "', '" . $data['billIdRada'] . "')";
+        $result = $query->queryToDB($sql);
 
-        return $this->query->getConnection()->insert_id;
+        return $query->getConnection()->insert_id;
     }
-
 
     /**
      * Parse heading block of bill
@@ -192,15 +186,17 @@ class VotesParser
         preg_match("/Проти:(\d+)/", $blockContent, $opposite);
         preg_match("/Утрималися:(\d+)/", $blockContent, $refrained);
         preg_match("/голосували:(\d+)/", $blockContent, $notVote);
+        preg_match("/Всього:(\d+)/", $blockContent, $all);
         preg_match("/=(\d+)/", $link, $billIdRada);
 
         $data['za'] = $za[1];
         $data['opposite'] = $opposite[1];
         $data['refrained'] = $refrained[1];
         $data['notVote'] = $notVote[1];
+        $data['all'] = $all[1];
         $data['billIdRada'] = $billIdRada[1];
 
-        var_dump($data);
+        //var_dump($data);
 
         return $data;
     }

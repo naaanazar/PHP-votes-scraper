@@ -26,7 +26,7 @@ $sql = "CREATE TABLE  votes(
 id INT(8) UNSIGNED AUTO_INCREMENT PRIMARY KEY, 
 deputat_id  INT(6) NOT NULL,
 bill_id  INT(6) NOT NULL,
-votes VARCHAR(255),
+votes ENUM('не голосував', 'не голосувала', 'medium', 'проти', 'за', 'відсутній', 'відсутня', 'утримався', 'утрималась'),
 created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 )";
 
@@ -34,14 +34,15 @@ $query->queryToDB($sql);
 
 $sql = "CREATE TABLE  bill(
 id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY, 
-billIdRada  VARCHAR(6) NOT NULL,
-billName TEXT,
-billStatus  BOOLEAN,
+bill_id_rada  VARCHAR(6) NOT NULL,
+bill_name TEXT,
+bill_status  BOOLEAN,
 date DATETIME,
-za  SMALLINT,
-opposite  SMALLINT,
-refrained  SMALLINT,
-notVote  SMALLINT,
+yes  SMALLINT,
+no  SMALLINT,
+abstained  SMALLINT,
+not_vote  SMALLINT,
+all_deputats  SMALLINT,
 created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 )";
 
