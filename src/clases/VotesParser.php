@@ -25,6 +25,7 @@ class VotesParser
      */
     public function ParseVotes()
     {
+
         $page = 1;
         while (true) {
 
@@ -47,6 +48,11 @@ class VotesParser
                         $vote = $this->getEncodData($element->find('.golos', 0)->plaintext);
                         $vote = mb_strtolower($this->getValidData(str_replace('</font>', '', $vote)));
 
+                        $description = null;
+                        if(stristr($vote, '*') !== FALSE) {
+                            $description = $this->getEncodData($votes->find('li[id="00"] table tbody tr', 2)->children(0)->innertext);
+                        }
+
                         /**
                         const voteMap = {
                         noVote   : ['не голосував', 'не голосувала'],
@@ -62,10 +68,10 @@ class VotesParser
 
                         $deputatId = $this->getDeputatId($name);
 
-                        $this->insertVotesToDB($deputatId, $vote, $billId);
+                        $this->insertVotesToDB($deputatId, $vote, $billId, $description);
                     }
 
-                    sleep(30);
+                    sleep(20);
                 }
             } else {
                 echo 'END SCRUB';
@@ -77,8 +83,23 @@ class VotesParser
         }
     }
 
+    public function test()
+    {
+        $votes = HtmlDomParser::file_get_html('http://w1.c1.rada.gov.ua/pls/radan_gs09/ns_golos?g_id=13100');
 
-    /**
+        foreach ($votes->find('li[id="00"] ul.fr li ul.frd li') as $element) {
+            $name = $this->getValidData($this->getEncodData($element->find('.dep', 0)->innertext));
+            $vote = $this->getEncodData($element->find('.golos', 0)->plaintext);
+            $vote = mb_strtolower($this->getValidData(str_replace('</font>', '', $vote)));
+
+            if(stristr($vote, '*') !== FALSE) {
+                var_dump($this->getEncodData($votes->find('li[id="00"] table tbody tr', 2)->children(0)->innertext));
+                echo $vote;
+            }
+        }
+    }
+
+/**
      * Validation data
      * @param $data
      * @return string
@@ -135,11 +156,11 @@ class VotesParser
      * @param $bill
      * @return bool|\mysqli_result
      */
-    protected function insertVotesToDB($deputatId, $vote, $bill)
+    protected function insertVotesToDB($deputatId, $vote, $bill, $description)
     {
         $query = new QueryToDB();
 
-        $sql = "INSERT  INTO votes (deputat_id, bill_id, votes) VALUES ('" . $deputatId . "', '" . $bill . "', '" . $vote . "')";
+        $sql = "INSERT  INTO votes (deputat_id, bill_id, votes, description) VALUES ('" . $deputatId . "', '" . $bill . "', '" . $vote . "', '" . $description . "')";
 
         return $query->queryToDB($sql);
     }

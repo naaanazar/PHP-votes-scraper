@@ -26,7 +26,8 @@ $sql = "CREATE TABLE  votes(
 id INT(8) UNSIGNED AUTO_INCREMENT PRIMARY KEY, 
 deputat_id  INT(6) NOT NULL,
 bill_id  INT(6) NOT NULL,
-votes ENUM('не голосував', 'не голосувала', 'medium', 'проти', 'за', 'відсутній', 'відсутня', 'утримався', 'утрималась'),
+votes ENUM('не голосував', 'не голосувала', 'medium', 'проти', 'за', 'відсутній', 'відсутня', 'утримався', 'утрималась', 'не голосував*', 'не голосувала*', 'medium*', 'проти*', 'за*', 'відсутній*', 'відсутня*', 'утримався*', 'утрималась*'),
+description TEXT,
 created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 )";
 
